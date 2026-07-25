@@ -9,3 +9,4 @@ C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\Domain\obj\Debug\net10.0\
 C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\Domain\obj\Debug\net10.0\refint\Domain.dll
 C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\Domain\obj\Debug\net10.0\Domain.pdb
 C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\Domain\obj\Debug\net10.0\ref\Domain.dll
+C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\Domain\obj\Debug\net10.0\Domain.sourcelink.json

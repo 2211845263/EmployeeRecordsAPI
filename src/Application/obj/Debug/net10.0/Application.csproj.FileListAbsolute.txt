@@ -13,3 +13,4 @@ C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\Application\obj\Debug\net
 C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\Application\obj\Debug\net10.0\refint\Application.dll
 C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\Application\obj\Debug\net10.0\Application.pdb
 C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\Application\obj\Debug\net10.0\ref\Application.dll
+C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\Application\obj\Debug\net10.0\Application.sourcelink.json
