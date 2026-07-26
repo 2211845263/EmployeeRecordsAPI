@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 
 namespace API.Controllers;
 
@@ -40,6 +41,19 @@ public class AuthController : ControllerBase
         };
 
         _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        var performedBy = User.FindFirstValue(ClaimTypes.Email) ?? "Unknown";
+        var auditLog = new AuditLog
+        {
+            EntityName = "User",
+            Action = "Create",
+            PerformedBy = performedBy,
+            PerformedAt = DateTime.UtcNow,
+            OldValues = null,
+            NewValues = JsonSerializer.Serialize(new { user.FullName, user.Email, user.Role })
+        };
+        _context.AuditLogs.Add(auditLog);
         await _context.SaveChangesAsync();
 
         return Ok(new { message = "User registered successfully." });

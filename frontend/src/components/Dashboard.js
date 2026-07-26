@@ -4,6 +4,7 @@ function Dashboard({ token, role, onLogout }) {
   const [activeTab, setActiveTab] = useState("employees");
   const [employees, setEmployees] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ fullName: "", email: "", department: "", position: "" });
   const [userForm, setUserForm] = useState({ fullName: "", email: "", password: "", role: "Viewer" });
   const [showForm, setShowForm] = useState(false);
@@ -12,6 +13,7 @@ function Dashboard({ token, role, onLogout }) {
   const [success, setSuccess] = useState("");
   const [userError, setUserError] = useState("");
   const [userSuccess, setUserSuccess] = useState("");
+  const [expandedLog, setExpandedLog] = useState(null);
 
   const headers = {
     "Content-Type": "application/json",
@@ -30,9 +32,18 @@ function Dashboard({ token, role, onLogout }) {
     setAuditLogs(data);
   };
 
+  const fetchUsers = async () => {
+    const res = await fetch("http://localhost:5000/api/user", { headers });
+    const data = await res.json();
+    setUsers(data);
+  };
+
   useEffect(() => {
     fetchEmployees();
-    if (role === "Admin") fetchAuditLogs();
+    if (role === "Admin") {
+      fetchAuditLogs();
+      fetchUsers();
+    }
   }, []);
 
   const handleCreate = async (e) => {
@@ -70,6 +81,7 @@ function Dashboard({ token, role, onLogout }) {
     setUserSuccess("User created successfully.");
     setUserForm({ fullName: "", email: "", password: "", role: "Viewer" });
     setShowUserForm(false);
+    fetchUsers();
   };
 
   const inputStyle = {
@@ -271,25 +283,69 @@ function Dashboard({ token, role, onLogout }) {
                     <th style={thStyle}>Action</th>
                     <th style={thStyle}>Entity</th>
                     <th style={thStyle}>Performed By</th>
+                    <th style={thStyle}>Changes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {auditLogs.map((log) => (
-                    <tr key={log.id}>
-                      <td style={tdStyle}>{new Date(log.performedAt).toLocaleString()}</td>
-                      <td style={tdStyle}>
-                        <span style={{
-                          display: "inline-block", padding: "3px 10px", borderRadius: 20,
-                          fontSize: 12, fontWeight: 600,
-                          background: log.action === "Create" ? "#DCFCE7" :
-                            log.action === "Update" ? "#DBEAFE" : "#FEF2F2",
-                          color: log.action === "Create" ? "#16A34A" :
-                            log.action === "Update" ? "#2563EB" : "#DC2626"
-                        }}>{log.action}</span>
-                      </td>
-                      <td style={tdStyle}>{log.entityName}</td>
-                      <td style={{ ...tdStyle, fontWeight: 600, color: "#0F172A" }}>{log.performedBy}</td>
-                    </tr>
+                    <>
+                      <tr key={log.id}
+                        onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
+                        style={{ cursor: "pointer" }}>
+                        <td style={tdStyle}>{new Date(log.performedAt).toLocaleString()}</td>
+                        <td style={tdStyle}>
+                          <span style={{
+                            display: "inline-block", padding: "3px 10px", borderRadius: 20,
+                            fontSize: 12, fontWeight: 600,
+                            background: log.action === "Create" ? "#DCFCE7" :
+                              log.action === "Update" ? "#DBEAFE" : "#FEF2F2",
+                            color: log.action === "Create" ? "#16A34A" :
+                              log.action === "Update" ? "#2563EB" : "#DC2626"
+                          }}>{log.action}</span>
+                        </td>
+                        <td style={tdStyle}>{log.entityName}</td>
+                        <td style={{ ...tdStyle, fontWeight: 600, color: "#0F172A" }}>{log.performedBy}</td>
+                        <td style={tdStyle}>
+                          <span style={{ color: "#3B82F6", fontSize: 12, fontWeight: 600 }}>
+                            {expandedLog === log.id ? "▲ Hide" : "▼ Show"}
+                          </span>
+                        </td>
+                      </tr>
+                      {expandedLog === log.id && (
+                        <tr key={`${log.id}-details`}>
+                          <td colSpan={5} style={{ padding: "0 20px 16px 20px", background: "#F8FAFC" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                              {log.oldValues && (
+                                <div>
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B",
+                                    textTransform: "uppercase", marginBottom: 6 }}>Before</div>
+                                  <pre style={{
+                                    background: "#FEF2F2", border: "1px solid #FECACA",
+                                    borderRadius: 8, padding: 12, fontSize: 12,
+                                    color: "#DC2626", overflow: "auto", margin: 0
+                                  }}>
+                                    {JSON.stringify(JSON.parse(log.oldValues), null, 2)}
+                                  </pre>
+                                </div>
+                              )}
+                              {log.action !== "Disable" && log.newValues && (
+                                <div>
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B",
+                                    textTransform: "uppercase", marginBottom: 6 }}>After</div>
+                                  <pre style={{
+                                    background: "#DCFCE7", border: "1px solid #BBF7D0",
+                                    borderRadius: 8, padding: 12, fontSize: 12,
+                                    color: "#16A34A", overflow: "auto", margin: 0
+                                  }}>
+                                    {JSON.stringify(JSON.parse(log.newValues), null, 2)}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))}
                 </tbody>
               </table>
@@ -375,8 +431,39 @@ function Dashboard({ token, role, onLogout }) {
             )}
 
             <div style={{ background: "#fff", border: "1px solid #E2E8F0",
-              borderRadius: 12, padding: 32, textAlign: "center", color: "#94A3B8", fontSize: 14 }}>
-              User list coming soon — create accounts using the form above.
+              borderRadius: 12, overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>Name</th>
+                    <th style={thStyle}>Email</th>
+                    <th style={thStyle}>Role</th>
+                    <th style={thStyle}>Created At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      <td style={{ ...tdStyle, fontWeight: 600, color: "#0F172A" }}>{user.fullName}</td>
+                      <td style={tdStyle}>{user.email}</td>
+                      <td style={tdStyle}>
+                        <span style={{
+                          display: "inline-block", padding: "3px 10px", borderRadius: 20,
+                          fontSize: 12, fontWeight: 600,
+                          background: user.role === "Admin" ? "#DBEAFE" : "#F1F5F9",
+                          color: user.role === "Admin" ? "#2563EB" : "#475569"
+                        }}>{user.role}</span>
+                      </td>
+                      <td style={tdStyle}>{new Date(user.createdAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {users.length === 0 && (
+                <div style={{ padding: 48, textAlign: "center", color: "#94A3B8", fontSize: 14 }}>
+                  No users found.
+                </div>
+              )}
             </div>
           </>
         )}
