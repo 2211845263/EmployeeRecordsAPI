@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 
 function Dashboard({ token, role, onLogout }) {
   const [activeTab, setActiveTab] = useState("employees");
+  const [allEmployees, setAllEmployees] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [users, setUsers] = useState([]);
@@ -22,9 +23,10 @@ function Dashboard({ token, role, onLogout }) {
   };
 
   const fetchEmployees = async () => {
-    const res = await fetch(`http://localhost:5000/api/employee?includeDisabled=${includeDisabled}`, { headers });
+    const res = await fetch(`http://localhost:5000/api/employee?includeDisabled=true`, { headers });
     const data = await res.json();
-    setEmployees(data);
+    setAllEmployees(data);
+    setEmployees(includeDisabled ? data : data.filter(e => e.isActive));
   };
 
   const fetchAuditLogs = async () => {
@@ -40,12 +42,12 @@ function Dashboard({ token, role, onLogout }) {
   };
 
   useEffect(() => {
-    fetchEmployees();
+    fetchEmployees(false);
     if (role === "Admin") {
       fetchAuditLogs();
       fetchUsers();
     }
-  }, [includeDisabled]);
+  }, []);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -57,14 +59,34 @@ function Dashboard({ token, role, onLogout }) {
     setSuccess("Employee added successfully.");
     setForm({ fullName: "", email: "", department: "", position: "" });
     setShowForm(false);
-    fetchEmployees();
+    const empRes = await fetch(`http://localhost:5000/api/employee?includeDisabled=true`, { headers });
+    const data = await empRes.json();
+    setAllEmployees(data);
+    setEmployees(data.filter(e => e.isActive));
     fetchAuditLogs();
   };
 
   const handleDisable = async (id) => {
     if (!window.confirm("Disable this employee?")) return;
     await fetch(`http://localhost:5000/api/employee/${id}`, { method: "DELETE", headers });
-    fetchEmployees();
+    const res = await fetch(`http://localhost:5000/api/employee?includeDisabled=true`, { headers });
+    const data = await res.json();
+    setAllEmployees(data);
+    setEmployees(includeDisabled ? data : data.filter(e => e.isActive));
+    fetchAuditLogs();
+  };
+
+  const handleActivate = async (id) => {
+    if (!window.confirm("Activate this employee?")) return;
+    await fetch(`http://localhost:5000/api/employee/${id}/activate`, {
+      method: "PATCH",
+      headers,
+    });
+    setIncludeDisabled(false);
+    const res = await fetch(`http://localhost:5000/api/employee?includeDisabled=true`, { headers });
+    const data = await res.json();
+    setAllEmployees(data);
+    setEmployees(data.filter(e => e.isActive));
     fetchAuditLogs();
   };
 
@@ -143,8 +165,10 @@ function Dashboard({ token, role, onLogout }) {
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px" }}>
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 28,
-          borderBottom: "1px solid #E2E8F0" }}>
+        <div style={{
+          display: "flex", gap: 4, marginBottom: 28,
+          borderBottom: "1px solid #E2E8F0"
+        }}>
           {tabs.map((tab) => (
             <button key={tab} onClick={() => setActiveTab(tab)} style={{
               padding: "10px 20px", border: "none", background: "transparent",
@@ -161,8 +185,10 @@ function Dashboard({ token, role, onLogout }) {
         {/* Employees Tab */}
         {activeTab === "employees" && (
           <>
-            <div style={{ display: "flex", justifyContent: "space-between",
-              alignItems: "center", marginBottom: 20 }}>
+            <div style={{
+              display: "flex", justifyContent: "space-between",
+              alignItems: "center", marginBottom: 20
+            }}>
               <div>
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A" }}>Employees</h2>
                 <p style={{ color: "#64748B", fontSize: 13, marginTop: 2 }}>
@@ -170,7 +196,11 @@ function Dashboard({ token, role, onLogout }) {
                 </p>
               </div>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                <button onClick={() => setIncludeDisabled(!includeDisabled)} style={{
+                <button onClick={() => {
+                  const newValue = !includeDisabled;
+                  setIncludeDisabled(newValue);
+                  setEmployees(newValue ? allEmployees : allEmployees.filter(e => e.isActive));
+                }} style={{
                   padding: "9px 20px",
                   background: includeDisabled ? "#F1F5F9" : "transparent",
                   color: "#64748B",
@@ -191,8 +221,10 @@ function Dashboard({ token, role, onLogout }) {
             </div>
 
             {showForm && role === "Admin" && (
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0",
-                borderRadius: 12, padding: 24, marginBottom: 24 }}>
+              <div style={{
+                background: "#fff", border: "1px solid #E2E8F0",
+                borderRadius: 12, padding: 24, marginBottom: 24
+              }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, color: "#0F172A" }}>
                   New Employee
                 </h3>
@@ -264,11 +296,19 @@ function Dashboard({ token, role, onLogout }) {
                       </td>
                       {role === "Admin" && (
                         <td style={tdStyle}>
-                          <button onClick={() => handleDisable(emp.id)} style={{
-                            padding: "6px 14px", background: "#FEF2F2",
-                            color: "#DC2626", border: "1px solid #FECACA",
-                            borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer"
-                          }}>Disable</button>
+                          {emp.isActive ? (
+                            <button onClick={() => handleDisable(emp.id)} style={{
+                              padding: "6px 14px", background: "#FEF2F2",
+                              color: "#DC2626", border: "1px solid #FECACA",
+                              borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer"
+                            }}>Disable</button>
+                          ) : (
+                            <button onClick={() => handleActivate(emp.id)} style={{
+                              padding: "6px 14px", background: "#DCFCE7",
+                              color: "#16A34A", border: "1px solid #BBF7D0",
+                              borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: "pointer"
+                            }}>Activate</button>
+                          )}
                         </td>
                       )}
                     </tr>
@@ -293,8 +333,10 @@ function Dashboard({ token, role, onLogout }) {
                 All system actions tracked automatically
               </p>
             </div>
-            <div style={{ background: "#fff", border: "1px solid #E2E8F0",
-              borderRadius: 12, overflow: "hidden" }}>
+            <div style={{
+              background: "#fff", border: "1px solid #E2E8F0",
+              borderRadius: 12, overflow: "hidden"
+            }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
@@ -336,8 +378,10 @@ function Dashboard({ token, role, onLogout }) {
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                               {log.oldValues && (
                                 <div>
-                                  <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B",
-                                    textTransform: "uppercase", marginBottom: 6 }}>Before</div>
+                                  <div style={{
+                                    fontSize: 11, fontWeight: 700, color: "#64748B",
+                                    textTransform: "uppercase", marginBottom: 6
+                                  }}>Before</div>
                                   <pre style={{
                                     background: "#FEF2F2", border: "1px solid #FECACA",
                                     borderRadius: 8, padding: 12, fontSize: 12,
@@ -349,8 +393,10 @@ function Dashboard({ token, role, onLogout }) {
                               )}
                               {log.action !== "Disable" && log.newValues && (
                                 <div>
-                                  <div style={{ fontSize: 11, fontWeight: 700, color: "#64748B",
-                                    textTransform: "uppercase", marginBottom: 6 }}>After</div>
+                                  <div style={{
+                                    fontSize: 11, fontWeight: 700, color: "#64748B",
+                                    textTransform: "uppercase", marginBottom: 6
+                                  }}>After</div>
                                   <pre style={{
                                     background: "#DCFCE7", border: "1px solid #BBF7D0",
                                     borderRadius: 8, padding: 12, fontSize: 12,
@@ -380,8 +426,10 @@ function Dashboard({ token, role, onLogout }) {
         {/* Manage Users Tab */}
         {activeTab === "users" && role === "Admin" && (
           <>
-            <div style={{ display: "flex", justifyContent: "space-between",
-              alignItems: "center", marginBottom: 20 }}>
+            <div style={{
+              display: "flex", justifyContent: "space-between",
+              alignItems: "center", marginBottom: 20
+            }}>
               <div>
                 <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A" }}>Manage Users</h2>
                 <p style={{ color: "#64748B", fontSize: 13, marginTop: 2 }}>
@@ -397,40 +445,50 @@ function Dashboard({ token, role, onLogout }) {
             </div>
 
             {showUserForm && (
-              <div style={{ background: "#fff", border: "1px solid #E2E8F0",
-                borderRadius: 12, padding: 24, marginBottom: 24 }}>
+              <div style={{
+                background: "#fff", border: "1px solid #E2E8F0",
+                borderRadius: 12, padding: 24, marginBottom: 24
+              }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, color: "#0F172A" }}>
                   New User
                 </h3>
                 <form onSubmit={handleCreateUser}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 600,
-                        color: "#374151", marginBottom: 5 }}>Full Name</label>
+                      <label style={{
+                        display: "block", fontSize: 12, fontWeight: 600,
+                        color: "#374151", marginBottom: 5
+                      }}>Full Name</label>
                       <input style={inputStyle} placeholder="Jane Smith"
                         value={userForm.fullName}
                         onChange={(e) => setUserForm({ ...userForm, fullName: e.target.value })}
                         required />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 600,
-                        color: "#374151", marginBottom: 5 }}>Email</label>
+                      <label style={{
+                        display: "block", fontSize: 12, fontWeight: 600,
+                        color: "#374151", marginBottom: 5
+                      }}>Email</label>
                       <input style={inputStyle} placeholder="jane@company.com" type="email"
                         value={userForm.email}
                         onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
                         required />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 600,
-                        color: "#374151", marginBottom: 5 }}>Password</label>
+                      <label style={{
+                        display: "block", fontSize: 12, fontWeight: 600,
+                        color: "#374151", marginBottom: 5
+                      }}>Password</label>
                       <input style={inputStyle} placeholder="••••••••" type="password"
                         value={userForm.password}
                         onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
                         required />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 600,
-                        color: "#374151", marginBottom: 5 }}>Role</label>
+                      <label style={{
+                        display: "block", fontSize: 12, fontWeight: 600,
+                        color: "#374151", marginBottom: 5
+                      }}>Role</label>
                       <select style={inputStyle}
                         value={userForm.role}
                         onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}>
@@ -449,8 +507,10 @@ function Dashboard({ token, role, onLogout }) {
               </div>
             )}
 
-            <div style={{ background: "#fff", border: "1px solid #E2E8F0",
-              borderRadius: 12, overflow: "hidden" }}>
+            <div style={{
+              background: "#fff", border: "1px solid #E2E8F0",
+              borderRadius: 12, overflow: "hidden"
+            }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
