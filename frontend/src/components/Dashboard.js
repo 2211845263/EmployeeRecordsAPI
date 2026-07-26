@@ -205,8 +205,10 @@ function Dashboard({ token, role, onLogout }) {
                       { label: "Position", key: "position", placeholder: "Software Engineer" },
                     ].map(({ label, key, placeholder }) => (
                       <div key={key}>
-                        <label style={{ display: "block", fontSize: 12, fontWeight: 600,
-                          color: "#374151", marginBottom: 5 }}>{label}</label>
+                        <label style={{
+                          display: "block", fontSize: 12, fontWeight: 600,
+                          color: "#374151", marginBottom: 5
+                        }}>{label}</label>
                         <input style={inputStyle} placeholder={placeholder}
                           value={form[key]}
                           onChange={(e) => setForm({ ...form, [key]: e.target.value })}
@@ -224,8 +226,10 @@ function Dashboard({ token, role, onLogout }) {
               </div>
             )}
 
-            <div style={{ background: "#fff", border: "1px solid #E2E8F0",
-              borderRadius: 12, overflow: "hidden" }}>
+            <div style={{
+              background: "#fff", border: "1px solid #E2E8F0",
+              borderRadius: 12, overflow: "hidden"
+            }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr>
