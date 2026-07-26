@@ -37,10 +37,6 @@ function Login({ onLogin }) {
         width: 400, boxShadow: "0 25px 50px rgba(0,0,0,0.3)"
       }}>
         <div style={{ marginBottom: 32 }}>
-          <div style={{
-            width: 40, height: 40, background: "#3B82F6",
-            borderRadius: 8, marginBottom: 16
-          }} />
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A" }}>
             Employee Records
           </h1>
