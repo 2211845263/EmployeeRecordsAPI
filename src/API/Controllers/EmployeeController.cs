@@ -21,9 +21,14 @@ public class EmployeeController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] bool includeDisabled = false)
     {
-        var employees = await _context.Employees.Where(e => e.IsActive).ToListAsync();
+        var query = _context.Employees.AsQueryable();
+
+        if (!includeDisabled)
+            query = query.Where(e => e.IsActive);
+
+        var employees = await query.ToListAsync();
         return Ok(employees);
     }
 
