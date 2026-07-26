@@ -169,3 +169,5 @@ C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\API\bin\Debug\net10.0\pub
 C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\API\bin\Debug\net10.0\publish\appsettings.Development.json
 C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\API\bin\Debug\net10.0\publish\appsettings.json
 C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\API\obj\Debug\net10.0\API.sourcelink.json
+C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\API\bin\Debug\net10.0\BCrypt-Net-Next.dll
+C:\Users\abdel\Documents\GitHub\EmployeeRecordsAPI\src\API\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll

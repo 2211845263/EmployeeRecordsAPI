@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class EmployeeController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -32,6 +34,7 @@ public class EmployeeController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] Employee employee)
     {
         employee.CreatedAt = DateTime.UtcNow;
@@ -41,6 +44,7 @@ public class EmployeeController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] Employee updated)
     {
         var employee = await _context.Employees.FindAsync(id);
@@ -57,6 +61,7 @@ public class EmployeeController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Disable(int id)
     {
         var employee = await _context.Employees.FindAsync(id);
