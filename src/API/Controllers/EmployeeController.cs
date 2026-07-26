@@ -95,6 +95,26 @@ public class EmployeeController : ControllerBase
         return Ok(new { message = "Employee disabled successfully" });
     }
 
+    [HttpPatch("{id}/activate")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Activate(int id)
+    {
+        var employee = await _context.Employees.FindAsync(id);
+        if (employee == null) return NotFound();
+
+        var oldValues = JsonSerializer.Serialize(employee);
+
+        employee.IsActive = true;
+        employee.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        await WriteAuditLog("Employee", "Activate", oldValues, employee);
+
+        return Ok(employee);
+    }
+
+
     private async Task WriteAuditLog(string entityName, string action, string? oldValues, object newValues)
     {
         var performedBy = User.FindFirstValue(ClaimTypes.Email) ?? "Unknown";

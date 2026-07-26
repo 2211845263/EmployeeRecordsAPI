@@ -14,6 +14,7 @@ function Dashboard({ token, role, onLogout }) {
   const [userError, setUserError] = useState("");
   const [userSuccess, setUserSuccess] = useState("");
   const [expandedLog, setExpandedLog] = useState(null);
+  const [includeDisabled, setIncludeDisabled] = useState(false);
 
   const headers = {
     "Content-Type": "application/json",
@@ -21,7 +22,7 @@ function Dashboard({ token, role, onLogout }) {
   };
 
   const fetchEmployees = async () => {
-    const res = await fetch("http://localhost:5000/api/employee", { headers });
+    const res = await fetch(`http://localhost:5000/api/employee?includeDisabled=${includeDisabled}`, { headers });
     const data = await res.json();
     setEmployees(data);
   };
@@ -44,7 +45,7 @@ function Dashboard({ token, role, onLogout }) {
       fetchAuditLogs();
       fetchUsers();
     }
-  }, []);
+  }, [includeDisabled]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -121,7 +122,6 @@ function Dashboard({ token, role, onLogout }) {
         justifyContent: "space-between", height: 56
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 28, height: 28, background: "#3B82F6", borderRadius: 6 }} />
           <span style={{ color: "#fff", fontWeight: 700, fontSize: 15 }}>
             Employee Records
           </span>
@@ -169,14 +169,25 @@ function Dashboard({ token, role, onLogout }) {
                   {employees.length} active record{employees.length !== 1 ? "s" : ""}
                 </p>
               </div>
-              {role === "Admin" && (
-                <button onClick={() => { setShowForm(!showForm); setError(""); setSuccess(""); }} style={{
-                  padding: "9px 20px", background: "#3B82F6", color: "#fff",
-                  border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer"
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                <button onClick={() => setIncludeDisabled(!includeDisabled)} style={{
+                  padding: "9px 20px",
+                  background: includeDisabled ? "#F1F5F9" : "transparent",
+                  color: "#64748B",
+                  border: "1px solid #E2E8F0",
+                  borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer"
                 }}>
-                  {showForm ? "Cancel" : "+ Add Employee"}
+                  {includeDisabled ? "Hide Disabled" : "Show Disabled"}
                 </button>
-              )}
+                {role === "Admin" && (
+                  <button onClick={() => { setShowForm(!showForm); setError(""); setSuccess(""); }} style={{
+                    padding: "9px 20px", background: "#3B82F6", color: "#fff",
+                    border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer"
+                  }}>
+                    {showForm ? "Cancel" : "+ Add Employee"}
+                  </button>
+                )}
+              </div>
             </div>
 
             {showForm && role === "Admin" && (
@@ -236,11 +247,15 @@ function Dashboard({ token, role, onLogout }) {
                       <td style={tdStyle}>
                         <span style={{
                           display: "inline-flex", alignItems: "center", gap: 6,
-                          background: "#DCFCE7", color: "#16A34A",
+                          background: emp.isActive ? "#DCFCE7" : "#F1F5F9",
+                          color: emp.isActive ? "#16A34A" : "#94A3B8",
                           fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 20
                         }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#16A34A" }} />
-                          Active
+                          <span style={{
+                            width: 6, height: 6, borderRadius: "50%",
+                            background: emp.isActive ? "#16A34A" : "#94A3B8"
+                          }} />
+                          {emp.isActive ? "Active" : "Disabled"}
                         </span>
                       </td>
                       {role === "Admin" && (
