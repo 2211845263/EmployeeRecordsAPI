@@ -3,6 +3,8 @@ using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace API.Controllers;
 
@@ -40,8 +42,12 @@ public class EmployeeController : ControllerBase
         employee.CreatedAt = DateTime.UtcNow;
         _context.Employees.Add(employee);
         await _context.SaveChangesAsync();
+
+        await WriteAuditLog("Employee", "Create", null, employee);
+
         return CreatedAtAction(nameof(GetById), new { id = employee.Id }, employee);
     }
+
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
@@ -50,6 +56,8 @@ public class EmployeeController : ControllerBase
         var employee = await _context.Employees.FindAsync(id);
         if (employee == null) return NotFound();
 
+        var oldValues = JsonSerializer.Serialize(employee);
+
         employee.FullName = updated.FullName;
         employee.Email = updated.Email;
         employee.Department = updated.Department;
@@ -57,6 +65,9 @@ public class EmployeeController : ControllerBase
         employee.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        await WriteAuditLog("Employee", "Update", oldValues, employee);
+
         return Ok(employee);
     }
 
@@ -67,10 +78,33 @@ public class EmployeeController : ControllerBase
         var employee = await _context.Employees.FindAsync(id);
         if (employee == null) return NotFound();
 
+        var oldValues = JsonSerializer.Serialize(employee);
+
         employee.IsActive = false;
         employee.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        await WriteAuditLog("Employee", "Disable", oldValues, employee);
+
         return Ok(new { message = "Employee disabled successfully" });
+    }
+
+    private async Task WriteAuditLog(string entityName, string action, string? oldValues, object newValues)
+    {
+        var performedBy = User.FindFirstValue(ClaimTypes.Email) ?? "Unknown";
+
+        var auditLog = new AuditLog
+        {
+            EntityName = entityName,
+            Action = action,
+            PerformedBy = performedBy,
+            PerformedAt = DateTime.UtcNow,
+            OldValues = oldValues,
+            NewValues = JsonSerializer.Serialize(newValues)
+        };
+
+        _context.AuditLogs.Add(auditLog);
+        await _context.SaveChangesAsync();
     }
 }
